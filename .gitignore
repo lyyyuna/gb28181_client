@@ -21,6 +21,7 @@
 *.smod
 
 # Compiled Static libraries
+*.a
 *.lai
 *.la
 *.lib
@@ -31,3 +32,4 @@
 *.app
 
 build/
+bin/

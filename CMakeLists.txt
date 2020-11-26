@@ -4,11 +4,8 @@ set (CMAKE_CXX_STANDARD 17)
 project(${APPNAME})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-if (APPLE)
-    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/osx)
-else()
-    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/linux )
-endif()
+    
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src DIR_SRCS)
 add_executable(${APPNAME} ${DIR_SRCS})
