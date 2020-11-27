@@ -37,8 +37,8 @@
 
 #ifndef MINISIZE
 
-#ifndef __EX_PUBLISH_H__
-#define __EX_PUBLISH_H__
+#ifndef __EX_REFER_H__
+#define __EX_REFER_H__
 
 #include <osipparser2/osip_parser.h>
 #include <time.h>
@@ -48,48 +48,44 @@ extern "C" {
 #endif
 
 /**
- * @file eX_publish.h
- * @brief eXosip publish request API
+ * @file eX_refer.h
+ * @brief eXosip transfer outside of calls API
  *
- * This file provide the API needed to control PUBLISH requests. You can
- * use it to:
+ * This file provide the API needed to request a blind transfer
+ * outside of any call.
  *
  * <ul>
- * <li>build PUBLISH requests.</li>
- * <li>send PUBLISH requests.</li>
+ * <li>build initial refer.</li>
+ * <li>send initial refer.</li>
  * </ul>
+ *
  */
 
 /**
- * @defgroup eXosip2_publish eXosip2 Publication Management
+ * @defgroup eXosip2_refer eXosip2 REFER and blind tranfer Management outside of calls
  * @ingroup eXosip2_msg
  * @{
  */
 
 /**
- * build publication for a user. (PUBLISH request)
+ * Build a default REFER message for a blind transfer outside of any calls.
  * 
  * @param excontext    eXosip_t instance.
- * @param message   returned published request.
- * @param to        SIP url for callee.
+ * @param refer     Pointer for the SIP element to hold.
+ * @param refer_to  SIP url for transfer.
  * @param from      SIP url for caller.
- * @param route     Route used for publication.
- * @param event     SIP Event header.
- * @param expires   SIP Expires header.
- * @param ctype     Content-Type of body.
- * @param body     body for publication.
+ * @param to        SIP url for callee.
+ * @param route     Route header for REFER. (optional)
  */
-  int eXosip_build_publish (struct eXosip_t *excontext, osip_message_t ** message, const char *to, const char *from, const char *route, const char *event, const char *expires, const char *ctype, const char *body);
+  int eXosip_refer_build_request (struct eXosip_t *excontext, osip_message_t ** refer, const char *refer_to, const char *from, const char *to, const char *route);
 
 /**
- * Send an Publication Message (PUBLISH request).
+ * Initiate a blind tranfer outside of any call.
  * 
  * @param excontext    eXosip_t instance.
- * @param message is a ready to be sent publish message .
- * @param to the aor of the publish request 
+ * @param refer     SIP REFER message to send.
  */
-  int eXosip_publish (struct eXosip_t *excontext, osip_message_t * message, const char *to);
-
+  int eXosip_refer_send_request (struct eXosip_t *excontext, osip_message_t * refer);
 
 /** @} */
 

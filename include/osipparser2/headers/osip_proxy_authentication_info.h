@@ -1,21 +1,22 @@
 /*
   The oSIP library implements the Session Initiation Protocol (SIP -rfc3261-)
-  Copyright (C) 2001-2020 Aymeric MOIZARD amoizard@antisip.com
-
+  Copyright (C) 2001-2012 Aymeric MOIZARD amoizard@antisip.com
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
   version 2.1 of the License, or(at your option) any later version.
-
+  
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Lesser General Public License for more details.
-
+  
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+
 
 #ifndef _OSIP_PROXY_AUTHENTICATION_INFO_H_
 #define _OSIP_PROXY_AUTHENTICATION_INFO_H_
@@ -37,10 +38,11 @@
  * Structure for Proxy-Authentication-Info headers.
  * @var osip_proxy_authentication_info_t
  */
-typedef osip_authentication_info_t osip_proxy_authentication_info_t;
+  typedef osip_authentication_info_t osip_proxy_authentication_info_t;
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -70,7 +72,7 @@ extern "C" {
  * @param header The element to work on.
  * @param dest A pointer on the copy of the element.
  */
-#define osip_proxy_authentication_info_clone osip_authentication_info_clone
+#define osip_proxy_authentication_info_clone(header, dest) osip_authentication_info_clone(header, dest)
 
 /**
  * Get value of the nextnonce parameter from a Authenication-Info element.
@@ -127,61 +129,7 @@ extern "C" {
  * @param value The value of the new parameter.
  */
 #define osip_proxy_authentication_info_set_nonce_count(header, value) osip_authentication_info_set_nonce_count(header, value)
-/**
- * Get value of the snum parameter from a Authenication-Info element.
- * @param header The element to work on.
- */
-#define osip_proxy_authentication_info_get_snum(header) osip_authentication_info_get_snum(header)
-/**
- * Add the snum parameter from a Authenication-Info element.
- * @param header The element to work on.
- * @param value The value of the new parameter.
- */
-#define osip_proxy_authentication_info_set_snum(header, value) osip_authentication_info_set_snum(header, value)
-/**
- * Get value of the srand parameter from a Authenication-Info element.
- * @param header The element to work on.
- */
-#define osip_proxy_authentication_info_get_srand(header) osip_authentication_info_get_srand(header)
-/**
- * Add the srand parameter from a Authenication-Info element.
- * @param header The element to work on.
- * @param value The value of the new parameter.
- */
-#define osip_proxy_authentication_info_set_srand(header, value) osip_authentication_info_set_srand(header, value)
-/**
- * Get value of the targetname parameter from a Authenication-Info element.
- * @param header The element to work on.
- */
-#define osip_proxy_authentication_info_get_targetname(header) osip_authentication_info_get_targetname(header)
-/**
- * Add the targetname parameter from a Authenication-Info element.
- * @param header The element to work on.
- * @param value The value of the new parameter.
- */
-#define osip_proxy_authentication_info_set_targetname(header, value) osip_authentication_info_set_targetname(header, value)
-/**
- * Get value of the realm parameter from a Authenication-Info element.
- * @param header The element to work on.
- */
-#define osip_proxy_authentication_info_get_realm(header) osip_authentication_info_get_realm(header)
-/**
- * Add the realm parameter from a Authenication-Info element.
- * @param header The element to work on.
- * @param value The value of the new parameter.
- */
-#define osip_proxy_authentication_info_set_realm(header, value) osip_authentication_info_set_realm(header, value)
-/**
- * Get value of the opaque parameter from a Authenication-Info element.
- * @param header The element to work on.
- */
-#define osip_proxy_authentication_info_get_opaque(header) osip_authentication_info_get_opaque(header)
-/**
- * Add the opaque parameter from a Authenication-Info element.
- * @param header The element to work on.
- * @param value The value of the new parameter.
- */
-#define osip_proxy_authentication_info_set_opaque(header, value) osip_authentication_info_set_opaque(header, value)
+
 
 #ifdef __cplusplus
 }

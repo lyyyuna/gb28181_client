@@ -4,24 +4,24 @@ WORKSPACE=`pwd`
 cd $WORKSPACE/3rd_party
 
 # libosip2
-tar xvf libosip2-5.2.0.tar.gz
-cd libosip2-5.2.0
+tar xvf libosip2-4.1.0.tar.gz
+cd libosip2-4.1.0
 
 ./configure --prefix=$WORKSPACE
 make install
 
 cd $WORKSPACE/3rd_party
-rm -rf libosip2-5.2.0
+rm -rf libosip2-4.1.0
 
 # libexosip2
-tar xvf libexosip2-5.2.0.tar.gz
-cd libexosip2-5.2.0
+tar xvf libexosip2-4.1.0.tar.gz
+cd libexosip2-4.1.0
 
 ./configure --prefix=$WORKSPACE
 make install
 
 cd $WORKSPACE/3rd_party
-rm -rf libexosip2-5.2.0
+rm -rf libexosip2-4.1.0
 
 # rm unused files
 cd $WORKSPACE
