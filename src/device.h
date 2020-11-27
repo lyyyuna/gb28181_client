@@ -37,15 +37,23 @@ public:
 
     void process_request();
 
+    void process_catalog_query(string sn);
+
+    void process_deviceinfo_query(string sn);
+
+    void process_devicestatus_query(string sn);
+
+    void process_devicecontrol_query(string sn);
+
     void heartbeat_task();
 
     void send_request(osip_message_t * request);
 
-    void send_response(eXosip_event_t * evt, osip_message_t * msg);
+    void send_response(shared_ptr<eXosip_event_t> evt, osip_message_t * msg);
 
-    osip_message_t * create_request();
+    osip_message_t * create_msg();
 
-    void send_response_ok(eXosip_event_t * evt);
+    void send_response_ok(shared_ptr<eXosip_event_t> evt);
 
     std::tuple<string, string> get_cmd(const char * body);
 

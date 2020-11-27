@@ -83,7 +83,9 @@ void Device::start() {
 
 void Device::process_request() {
     while (is_running) {
-        auto evt = eXosip_event_wait(sip_context, 0, 500);
+        auto evt = shared_ptr<eXosip_event_t>(
+            eXosip_event_wait(sip_context, 0, 500),
+            eXosip_event_free);
 
         eXosip_lock(sip_context);
         eXosip_automatic_action(sip_context);
@@ -136,35 +138,21 @@ void Device::process_request() {
                 auto cmd_sn = this->get_cmd(body->body);
                 string cmd = get<0>(cmd_sn);
                 string sn = get<1>(cmd_sn);
-                spdlog::info("got new cmd: \n{}", cmd);
+                spdlog::info("got new cmd: {}", cmd);
                 if ("Catalog" == cmd) {
-                    stringstream ss;
-                    ss << "<?xml version=\"1.0\" encoding=\"GB2312\"?>\r\n";
-                    ss << "<Response>\r\n";
-                    ss << "<CmdType>Catalog</CmdType>\r\n";
-                    ss << "<SN>" << sn << "</SN>\r\n";
-                    ss << "<DeviceID>" << device_sip_id << "</DeviceID>\r\n";
-                    ss << "<SumNum>" << 1 << "</SumNum>\r\n";
-                    ss << "<DeviceList Num=\"" << 1 << "\">\r\n";
-                    // ss << "<Manufacturer>" << manufacture << "</Manufacturer>\r\n";
-                    ss << "<Item>\r\n";
-                    ss << "<DeviceID>" << device_sip_id << "</DeviceID>\r\n";
-                    ss << "<Name>IPC</Name>\r\n";
-                    ss << "<ParentID>" << server_sip_id << "</ParentID>\r\n";
-                    ss << "</Item>\r\n";
-                    ss << "</DeviceList>\r\n";
-                    ss << "</Response>\r\n";
-                    spdlog::info("response: \n{}", ss.str());
-                    auto request = create_request();
-                    if (request != NULL) {
-                        osip_message_set_content_type(request, "Application/MANSCDP+xml");
-                        osip_message_set_body(request, ss.str().c_str(), strlen(ss.str().c_str()));
-                        send_request(request);
-                    }
-                } else if ("RecordInfo" == cmd) {
-
+                    this->process_catalog_query(sn);
+                } else if ("DeviceStatus" == cmd) {
+                    this->process_devicestatus_query(sn);
+                } else if ("DeviceInfo" == cmd) {
+                    this->process_deviceinfo_query(sn);
+                } else if ("DeviceControl" == cmd) {
+                    this->process_devicecontrol_query(sn);
+                } else {
+                    spdlog::error("unhandled cmd: {}", cmd);
                 }
-
+            } else if (MSG_IS_BYE(evt->request)) {
+                spdlog::info("got BYE msg");
+                break;
             }
             break;
         }
@@ -174,6 +162,98 @@ void Device::process_request() {
             break;
         }
     }
+}
+
+void Device::process_catalog_query(string sn) {
+    stringstream ss;
+    ss << "<?xml version=\"1.0\" encoding=\"GB2312\"?>\r\n";
+    ss << "<Response>\r\n";
+    ss << "<CmdType>Catalog</CmdType>\r\n";
+    ss << "<SN>" << sn << "</SN>\r\n";
+    ss << "<DeviceID>" << device_sip_id << "</DeviceID>\r\n";
+    ss << "<SumNum>" << 1 << "</SumNum>\r\n";
+    ss << "<DeviceList Num=\"" << 1 << "\">\r\n";
+    ss << "<Item>\r\n";
+    ss << "<DeviceID>" << device_sip_id << "</DeviceID>\r\n";
+    ss << "<Manufacturer>" << manufacture << "</Manufacturer>\r\n";
+    ss << "<Status>ON</Status>\r\n";
+    ss << "<Name>IPC</Name>\r\n";
+    ss << "<ParentID>" << server_sip_id << "</ParentID>\r\n";
+    ss << "</Item>\r\n";
+    ss << "</DeviceList>\r\n";
+    ss << "</Response>\r\n";
+    spdlog::info("catalog response: \n{}", ss.str());
+    auto request = create_msg();
+    if (request != NULL) {
+        osip_message_set_content_type(request, "Application/MANSCDP+xml");
+        osip_message_set_body(request, ss.str().c_str(), strlen(ss.str().c_str()));
+        send_request(request);
+    }
+}
+
+void Device::process_devicestatus_query(string sn) {
+    stringstream ss;
+
+    time_t rawtime;
+    struct tm* timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    char curtime[72] = {0};
+    sprintf(curtime, "%d-%d-%dT%02d:%02d:%02d", (timeinfo->tm_year + 1900), (timeinfo->tm_mon + 1),
+                        timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);    
+    
+    ss << "<?xml version=\"1.0\"?>\r\n";
+    ss << "<Response>\r\n";
+    ss << "<CmdType>DeviceStatus</CmdType>\r\n";
+    ss << "<SN>" << get_sn() << "</SN>\r\n";
+    ss << "<DeviceID>" << device_sip_id << "</DeviceID>\r\n";
+    ss << "<Result>OK</Result>\r\n";
+    ss << "<Online>ONLINE</Online>\r\n";
+    ss << "<Status>OK</Status>\r\n";
+    ss << "<DeviceTime>" << curtime << "</DeviceTime>\r\n";
+    ss << "<Alarmstatus Num=\"0\">\r\n";
+    ss << "</Alarmstatus>\r\n";
+    ss << "<Encode>ON</Encode>\r\n";
+    ss << "<Record>OFF</Record>\r\n";
+    ss << "</Response>\r\n";
+
+    spdlog::info("devicestatus response: \n{}", ss.str());
+    auto request = create_msg();
+    if (request != NULL) {
+        osip_message_set_content_type(request, "Application/MANSCDP+xml");
+        osip_message_set_body(request, ss.str().c_str(), strlen(ss.str().c_str()));
+        send_request(request);
+    }
+}
+
+void Device::process_deviceinfo_query(string sn) {
+    stringstream ss;
+
+    ss << "<?xml version=\"1.0\"?>\r\n";
+    ss <<    "<Response>\r\n";
+    ss <<    "<CmdType>DeviceInfo</CmdType>\r\n";
+    ss <<    "<SN>" << get_sn() << "</SN>\r\n";
+    ss <<    "<DeviceID>" << device_sip_id << "</DeviceID>\r\n";
+    ss <<    "<Result>OK</Result>\r\n";
+    ss <<    "<DeviceType>simulate client</DeviceType>\r\n";
+    ss <<    "<Manufacturer>ZHD</Manufacturer>\r\n";
+    ss <<    "<Model>28181</Model>\r\n";
+    ss <<    "<Firmware>fireware</Firmware>\r\n";
+    ss <<    "<MaxCamera>1</MaxCamera>\r\n";
+    ss <<    "<MaxAlarm>0</MaxAlarm>\r\n";
+    ss <<    "</Response>\r\n";
+
+    spdlog::info("deviceinfo response: \n{}", ss.str());
+    auto request = create_msg();
+    if (request != NULL) {
+        osip_message_set_content_type(request, "Application/MANSCDP+xml");
+        osip_message_set_body(request, ss.str().c_str(), strlen(ss.str().c_str()));
+        send_request(request);
+    }
+}
+
+void Device::process_devicecontrol_query(string sn) {
+
 }
 
 void Device::heartbeat_task() {
@@ -188,7 +268,7 @@ void Device::heartbeat_task() {
             ss << "<Status>OK</Status>\r\n";
             ss << "</Notify>\r\n";
 
-            osip_message_t* request = create_request();
+            osip_message_t* request = create_msg();
             if (request != NULL) {
                 osip_message_set_content_type(request, "Application/MANSCDP+xml");
                 osip_message_set_body(request, ss.str().c_str(), strlen(ss.str().c_str()));
@@ -201,7 +281,7 @@ void Device::heartbeat_task() {
 	}
 }
 
-osip_message_t * Device::create_request() {
+osip_message_t * Device::create_msg() {
 
     osip_message_t * request = nullptr;
     auto status = eXosip_message_build_request(sip_context, &request, "MESSAGE", to_sip.c_str(), from_sip.c_str(), nullptr);
@@ -218,13 +298,13 @@ void Device::send_request(osip_message_t * request) {
     eXosip_unlock(sip_context);
 }
 
-void Device::send_response(eXosip_event_t * evt, osip_message_t * msg) {
+void Device::send_response(shared_ptr<eXosip_event_t> evt, osip_message_t * msg) {
     eXosip_lock(sip_context);
     eXosip_message_send_answer(sip_context, evt->tid, 200, msg);
     eXosip_unlock(sip_context);
 }
 
-void Device::send_response_ok(eXosip_event_t * evt) {
+void Device::send_response_ok(shared_ptr<eXosip_event_t> evt) {
     auto msg = evt->request;
     eXosip_message_build_answer(sip_context, evt->tid, 200, &msg);
     send_response(evt, msg);
