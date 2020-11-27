@@ -84,7 +84,7 @@ void Device::start() {
 void Device::process_request() {
     while (is_running) {
         auto evt = shared_ptr<eXosip_event_t>(
-            eXosip_event_wait(sip_context, 0, 500),
+            eXosip_event_wait(sip_context, 0, 100),
             eXosip_event_free);
 
         eXosip_lock(sip_context);
@@ -95,15 +95,14 @@ void Device::process_request() {
             continue;
         }
 
-
         switch (evt->type)
         {
-        case EXOSIP_REGISTRATION_SUCCESS: {
+        case eXosip_event_type::EXOSIP_REGISTRATION_SUCCESS: {
             spdlog::info("register sucess");
             is_register = true;
             break;
         }
-        case EXOSIP_REGISTRATION_FAILURE: {
+        case eXosip_event_type::EXOSIP_REGISTRATION_FAILURE: {
             spdlog::info("register fail");
             if (evt->response == nullptr) {
                 spdlog::error("register 401 has no response !!!");
@@ -123,7 +122,7 @@ void Device::process_request() {
             };
             break;
         }
-        case EXOSIP_MESSAGE_NEW: {
+        case eXosip_event_type::EXOSIP_MESSAGE_NEW: {
             spdlog::info("got new message");
 
             if (MSG_IS_MESSAGE(evt->request)) {
@@ -152,14 +151,16 @@ void Device::process_request() {
                 }
             } else if (MSG_IS_BYE(evt->request)) {
                 spdlog::info("got BYE msg");
+                this->send_response_ok(evt);
                 break;
             }
             break;
         }
         
-        defaut: 
+        default: {
             spdlog::info("unhandled sip evt type: {}", evt->type);
             break;
+        }
         }
     }
 }
