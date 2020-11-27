@@ -68,6 +68,9 @@ public:
     int local_port;
 
     string manufacture;
+    string rtp_ip;
+    int rtp_port;
+    bool rtp_is_tcp;
 
 private:
     eXosip_t* sip_context;

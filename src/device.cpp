@@ -129,7 +129,7 @@ void Device::process_request() {
                 osip_body_t * body = nullptr;
                 osip_message_get_body(evt->request, 0, &body);
                 if (body != nullptr) {
-                    spdlog::info("request: \n{}", body->body);
+                    spdlog::info("new message request: \n{}", body->body);
                 }
 
                 this->send_response_ok(evt);
@@ -150,10 +150,43 @@ void Device::process_request() {
                     spdlog::error("unhandled cmd: {}", cmd);
                 }
             } else if (MSG_IS_BYE(evt->request)) {
-                spdlog::info("got BYE msg");
+                spdlog::info("got BYE message");
                 this->send_response_ok(evt);
                 break;
             }
+            break;
+        }
+        case eXosip_event_type::EXOSIP_CALL_INVITE: {
+            spdlog::info("got call invite");
+
+            auto sdp_msg = eXosip_get_remote_sdp(sip_context, evt->did);
+            if (!sdp_msg) {
+                spdlog::error("eXosip_get_remote_sdp failed");
+                break;
+            }
+
+            auto connection = eXosip_get_video_connection(sdp_msg);
+            if (!connection) {
+                spdlog::error("eXosip_get_video_connection failed");
+                break;                
+            }
+
+            rtp_ip = connection->c_addr;
+
+            auto video_sdp = eXosip_get_video_media(sdp_msg);
+            if (!video_sdp) {
+                spdlog::error("eXosip_get_video_media failed");
+                break;                  
+            }
+
+            rtp_port = atoi(video_sdp->m_port);
+
+            spdlog::info("rtp server: {}:{}", rtp_ip, rtp_port);
+
+            break;
+        }
+        case eXosip_event_type::EXOSIP_MESSAGE_ANSWERED: {
+            spdlog::info("got message answered");
             break;
         }
         
