@@ -105,7 +105,7 @@ void Device::process_request() {
             spdlog::info("register fail");
             if (evt->response == nullptr) {
                 spdlog::error("register 401 has no response !!!");
-                return;
+                break;
             }
 
             if (401 == evt->response->status_code) {
@@ -116,7 +116,7 @@ void Device::process_request() {
                 if (eXosip_add_authentication_info(sip_context, device_sip_id.c_str(), username.c_str(), password.c_str(), 
                                     "MD5", www_authenticate_header->realm)) {
                     spdlog::error("register add auth failed");
-                    return;
+                    break;
                 };
             };
             break;
@@ -136,6 +136,7 @@ void Device::process_request() {
                 auto cmd_sn = this->get_cmd(body->body);
                 string cmd = get<0>(cmd_sn);
                 string sn = get<1>(cmd_sn);
+                spdlog::info("got new cmd: \n{}", cmd);
                 if ("Catalog" == cmd) {
                     stringstream ss;
                     ss << "<?xml version=\"1.0\" encoding=\"GB2312\"?>\r\n";
@@ -145,6 +146,7 @@ void Device::process_request() {
                     ss << "<DeviceID>" << device_sip_id << "</DeviceID>\r\n";
                     ss << "<SumNum>" << 1 << "</SumNum>\r\n";
                     ss << "<DeviceList Num=\"" << 1 << "\">\r\n";
+                    // ss << "<Manufacturer>" << manufacture << "</Manufacturer>\r\n";
                     ss << "<Item>\r\n";
                     ss << "<DeviceID>" << device_sip_id << "</DeviceID>\r\n";
                     ss << "<Name>IPC</Name>\r\n";
@@ -191,6 +193,7 @@ void Device::heartbeat_task() {
                 osip_message_set_content_type(request, "Application/MANSCDP+xml");
                 osip_message_set_body(request, ss.str().c_str(), strlen(ss.str().c_str()));
                 send_request(request);
+                spdlog::info("sent heartbeat");
             }
         }
 
