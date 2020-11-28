@@ -98,12 +98,12 @@ void Device::process_request() {
         switch (evt->type)
         {
         case eXosip_event_type::EXOSIP_REGISTRATION_SUCCESS: {
-            spdlog::info("register sucess");
+            spdlog::info("got REGISTRATION_SUCCESS");
             is_register = true;
             break;
         }
         case eXosip_event_type::EXOSIP_REGISTRATION_FAILURE: {
-            spdlog::info("register fail");
+            spdlog::info("got REGISTRATION_FAILURE");
             if (evt->response == nullptr) {
                 spdlog::error("register 401 has no response !!!");
                 break;
@@ -123,7 +123,7 @@ void Device::process_request() {
             break;
         }
         case eXosip_event_type::EXOSIP_MESSAGE_NEW: {
-            spdlog::info("got new message");
+            spdlog::info("got MESSAGE_NEW");
 
             if (MSG_IS_MESSAGE(evt->request)) {
                 osip_body_t * body = nullptr;
@@ -157,7 +157,7 @@ void Device::process_request() {
             break;
         }
         case eXosip_event_type::EXOSIP_CALL_INVITE: {
-            spdlog::info("got call invite");
+            spdlog::info("got CALL_INVITE");
 
             auto sdp_msg = eXosip_get_remote_sdp(sip_context, evt->did);
             if (!sdp_msg) {
@@ -183,10 +183,70 @@ void Device::process_request() {
 
             spdlog::info("rtp server: {}:{}", rtp_ip, rtp_port);
 
+            rtp_protocol = video_sdp->m_proto;
+
+            spdlog::info("rtp protocol: {}", rtp_protocol);
+
+            osip_body_t *sdp_body = NULL;
+			osip_message_get_body(evt->request, 0, &sdp_body);
+            if (nullptr == sdp_body) {
+                spdlog::error("osip_message_get_body failed");
+                break; 
+            }
+
+            string body = sdp_body->body;
+            auto y_sdp_first_index = body.find("y=");
+            auto y_sdp = body.substr(y_sdp_first_index);
+            auto y_sdp_last_index = y_sdp.find("\r\n");
+            ssrc = y_sdp.substr(2, y_sdp_last_index-1);
+            spdlog::info("ssrc: {}", ssrc);
+
+            stringstream ss;
+			ss << "v=0\r\n";
+			ss << "o=" << device_sip_id << " 0 0 IN IP4 " << local_ip << "\r\n";
+			ss << "s=Play\r\n";
+			ss << "c=IN IP4 " << local_ip << "\r\n";
+			ss << "t=0 0\r\n";
+			if (rtp_protocol == "TCP/RTP/AVP") {
+				ss << "m=video " << local_port << " TCP/RTP/AVP 96\r\n";
+			}
+			else {
+				ss << "m=video " << local_port << " RTP/AVP 96\r\n";
+			}
+			ss << "a=sendonly\r\n";
+			ss << "a=rtpmap:96 PS/90000\r\n";
+			ss << "y=" << ssrc << "\r\n";
+			string sdp_output_str  = ss.str();
+
+            size_t size = sdp_output_str.size();
+
+			osip_message_t * message = evt->request;
+			int status = eXosip_call_build_answer(sip_context, evt->tid, 200, &message);
+
+			if (status != 0) {
+				spdlog::error("call invite build answer failed");
+				break;
+			}
+			
+			osip_message_set_content_type(message, "APPLICATION/SDP");
+			osip_message_set_body(message, sdp_output_str.c_str(), sdp_output_str.size());
+
+			eXosip_call_send_answer(sip_context, evt->tid, 200, message);
+
+            spdlog::info("reply call invite: \n{}", sdp_output_str);
+            break;
+        }
+        case eXosip_event_type::EXOSIP_CALL_ACK: {
+            spdlog::info("got CALL_ACK: begin pushing rtp stream...");
+            break;
+        }
+        case eXosip_event_type::EXOSIP_CALL_CLOSED: {
+            spdlog::info("got CALL_CLOSED: stop pushing rtp stream...");
+
             break;
         }
         case eXosip_event_type::EXOSIP_MESSAGE_ANSWERED: {
-            spdlog::info("got message answered");
+            spdlog::info("got MESSAGE_ANSWERED: unhandled");
             break;
         }
         

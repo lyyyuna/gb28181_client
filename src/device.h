@@ -70,7 +70,7 @@ public:
     string manufacture;
     string rtp_ip;
     int rtp_port;
-    bool rtp_is_tcp;
+    string rtp_protocol;
 
 private:
     eXosip_t* sip_context;
@@ -79,6 +79,7 @@ private:
 
     string from_sip;
     string to_sip;
+    string ssrc;
 };
 
 #endif
