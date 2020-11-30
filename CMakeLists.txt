@@ -10,8 +10,5 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src DIR_SRCS)
 add_executable(${APPNAME} ${DIR_SRCS})
-if (APPLE)
-    target_link_libraries(${APPNAME} eXosip2 osip2 osipparser2 pthread resolv)
-else()
-    target_link_libraries(${APPNAME} eXosip2 osip2 osipparser2 pthread)
-endif()
+
+target_link_libraries(${APPNAME} eXosip2 osip2 osipparser2 pthread resolv)
