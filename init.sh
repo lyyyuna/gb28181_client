@@ -19,7 +19,7 @@ rm -rf libosip2-$VERSION
 tar xvf libeXosip2-$VERSION.tar.gz
 cd libeXosip2-$VERSION
 
-./configure --prefix=$WORKSPACE
+./configure --prefix=$WORKSPACE LDFLAGS="-L$WORKSPACE/lib" CFLAGS="-L$WORKSPACE/include"
 make install
 
 cd $WORKSPACE/3rd_party
