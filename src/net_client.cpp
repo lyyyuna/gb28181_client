@@ -45,7 +45,6 @@ void Device::send_network_packet(const char * data, int length) {
         ::send(sockfd, data, length, 0);
     } else {
         sockaddr_in server_address;
-        sockaddr_in server_address;
         server_address.sin_family = AF_INET;
         server_address.sin_port = htons(rtp_port);
         inet_pton(AF_INET, rtp_ip.c_str(), &server_address.sin_addr);

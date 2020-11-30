@@ -4,6 +4,7 @@
         "iosfwd": "cpp",
         "string": "cpp",
         "thread": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "cstdint": "cpp"
     }
 }

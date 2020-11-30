@@ -4,6 +4,7 @@
 #include <string>
 #include <tuple>
 #include "eXosip2/eXosip.h"
+#include "load_h264.h"
 
 using namespace std;
 
@@ -14,7 +15,8 @@ public:
     Device(string server_sip_id, string server_ip, int server_port,
             string device_sip_id, string username, string password,
             int local_port,
-            string manufacture): 
+            string manufacture,
+            string filepath): 
             server_sip_id(server_sip_id), 
             server_ip(server_ip),
             server_port(server_port),
@@ -22,11 +24,14 @@ public:
             username(username),
             password(password),
             local_port(local_port),
-            manufacture(manufacture) {
+            manufacture(manufacture),
+            filepath(filepath) {
         sip_context = nullptr;
         is_running = false;
         is_register = false;
         local_ip = string(128, '0');
+
+        load(filepath.c_str());
     }
 
     ~Device(){}
@@ -57,6 +62,8 @@ public:
 
     std::tuple<string, string> get_cmd(const char * body);
 
+    void push_rtp_stream();
+
 public:
     string server_sip_id;
     string server_ip;
@@ -72,10 +79,13 @@ public:
     int rtp_port;
     string rtp_protocol;
 
+    string filepath;
+
 private:
     eXosip_t* sip_context;
     bool is_running;
     bool is_register;
+    bool is_pushing;
 
     string from_sip;
     string to_sip;

@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.8)
 set(APPNAME gb28181-client)
-set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE Debug)
 project(${APPNAME})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)

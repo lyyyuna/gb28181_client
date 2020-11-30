@@ -1,6 +1,7 @@
 #include "device.h"
 #include "spdlog/spdlog.h"
 #include "pugixml.hpp"
+#include "gb28181_header_maker.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/udp.h>
@@ -18,6 +19,136 @@ static int get_sn() {
 	}
 	sn++;
 	return sn;
+}
+
+void Device::push_rtp_stream() {
+    is_pushing = true;
+
+    auto status = this->bind();
+    if (status != 0) {
+        spdlog::error("device bind socket address failed: {}", status);
+        return ;
+    }
+
+	char ps_header[PS_HDR_LEN];
+
+	char ps_system_header[SYS_HDR_LEN];
+
+	char ps_map_header[PSM_HDR_LEN];
+
+	char pes_header[PES_HDR_LEN];
+
+	char rtp_header[RTP_HDR_LEN];    
+
+	int time_base = 90000;
+	int fps = 24;
+	int send_packet_interval = 1000 / fps;
+
+	int interval = time_base / fps;
+	long pts = 0;
+
+	char frame[1024 * 128];
+
+	int single_packet_max_length = 1400;
+
+	char rtp_packet[RTP_HDR_LEN+1400];
+
+	// int ssrc = 0xffffffff;
+	int rtp_seq = 0;
+
+    // Nalu *nalu = new Nalu();
+	// nalu->packet = (char *)malloc(1024*128);
+	// nalu->length = 1024 * 128;
+
+    while (is_pushing) {
+        for (auto i = 0; i < nalu_vector.size(); i++) {
+            auto nalu = nalu_vector.at(i);
+
+            NaluType  type = nalu->type;
+            int length = nalu->length;
+            char * packet = nalu->packet;
+
+            int index = 0;
+            if (NALU_TYPE_IDR == type) {
+                gb28181_make_ps_header(ps_header, pts);
+
+                memcpy(frame,ps_header,PS_HDR_LEN);
+                index += PS_HDR_LEN;
+
+                gb28181_make_sys_header(ps_system_header, 0x3f);
+
+                memcpy(frame+ index, ps_system_header, SYS_HDR_LEN);
+                index += SYS_HDR_LEN;
+
+                gb28181_make_psm_header(ps_map_header);
+
+                memcpy(frame + index, ps_map_header, PSM_HDR_LEN);
+                index += PSM_HDR_LEN;
+
+            } else {
+                gb28181_make_ps_header(ps_header, pts);
+
+                memcpy(frame, ps_header, PS_HDR_LEN);
+                index += PS_HDR_LEN;
+            }
+
+            //封装pes
+            gb28181_make_pes_header(pes_header, 0xe0, length, pts, pts);
+
+            memcpy(frame+index, pes_header, PES_HDR_LEN);
+            index += PES_HDR_LEN;
+
+            memcpy(frame + index, packet, length);
+            index += length;
+
+            //组包rtp
+
+            int rtp_packet_count = ((index - 1) / single_packet_max_length) + 1;
+
+            for (int i = 0; i < rtp_packet_count; i++) {
+
+                gb28181_make_rtp_header(rtp_header, rtp_seq, pts, atoi(ssrc.c_str()), i == (rtp_packet_count - 1));
+
+                int writed_count = single_packet_max_length;
+
+                if ((i + 1)*single_packet_max_length > index) {
+                    writed_count = index - (i* single_packet_max_length);
+                }
+                //添加包长字节
+                int rtp_start_index=0;
+
+                unsigned short rtp_packet_length = RTP_HDR_LEN + writed_count;
+                if (rtp_protocol == "TCP/RTP/AVP") {
+                    unsigned char packt_length_ary[2];
+                    packt_length_ary[0] = (rtp_packet_length >> 8) & 0xff;
+                    packt_length_ary[1] = rtp_packet_length & 0xff;
+                    memcpy(rtp_packet, packt_length_ary, 2);
+                    rtp_start_index = 2;
+                }
+
+                memcpy(rtp_packet+ rtp_start_index, rtp_header, RTP_HDR_LEN);
+                memcpy(rtp_packet+ +rtp_start_index + RTP_HDR_LEN, frame+ (i* single_packet_max_length), writed_count);
+                rtp_seq++;
+
+                if (is_pushing) {
+                    send_network_packet(rtp_packet, rtp_start_index + rtp_packet_length);
+                }
+                else {
+                    if (nalu != nullptr) {
+                        delete nalu;
+                        nalu = nullptr;
+                    }
+                    return;
+                }
+            }
+
+            pts += interval;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(send_packet_interval));
+        }
+    }
+
+    is_pushing = false;
 }
 
 void Device::start() {
@@ -202,42 +333,48 @@ void Device::process_request() {
             spdlog::info("ssrc: {}", ssrc);
 
             stringstream ss;
-			ss << "v=0\r\n";
-			ss << "o=" << device_sip_id << " 0 0 IN IP4 " << local_ip << "\r\n";
-			ss << "s=Play\r\n";
-			ss << "c=IN IP4 " << local_ip << "\r\n";
-			ss << "t=0 0\r\n";
-			if (rtp_protocol == "TCP/RTP/AVP") {
-				ss << "m=video " << local_port << " TCP/RTP/AVP 96\r\n";
-			}
-			else {
-				ss << "m=video " << local_port << " RTP/AVP 96\r\n";
-			}
-			ss << "a=sendonly\r\n";
-			ss << "a=rtpmap:96 PS/90000\r\n";
-			ss << "y=" << ssrc << "\r\n";
-			string sdp_output_str  = ss.str();
+            ss << "v=0\r\n";
+            ss << "o=" << device_sip_id << " 0 0 IN IP4 " << local_ip << "\r\n";
+            ss << "s=Play\r\n";
+            ss << "c=IN IP4 " << local_ip << "\r\n";
+            ss << "t=0 0\r\n";
+            if (rtp_protocol == "TCP/RTP/AVP") {
+                ss << "m=video " << local_port << " TCP/RTP/AVP 96\r\n";
+            }
+            else {
+                ss << "m=video " << local_port << " RTP/AVP 96\r\n";
+            }
+            ss << "a=sendonly\r\n";
+            ss << "a=rtpmap:96 PS/90000\r\n";
+            ss << "y=" << ssrc << "\r\n";
+            string sdp_output_str  = ss.str();
 
             size_t size = sdp_output_str.size();
 
-			osip_message_t * message = evt->request;
-			int status = eXosip_call_build_answer(sip_context, evt->tid, 200, &message);
+            osip_message_t * message = evt->request;
+            int status = eXosip_call_build_answer(sip_context, evt->tid, 200, &message);
 
-			if (status != 0) {
-				spdlog::error("call invite build answer failed");
-				break;
-			}
-			
-			osip_message_set_content_type(message, "APPLICATION/SDP");
-			osip_message_set_body(message, sdp_output_str.c_str(), sdp_output_str.size());
+            if (status != 0) {
+                spdlog::error("call invite build answer failed");
+                break;
+            }
+            
+            osip_message_set_content_type(message, "APPLICATION/SDP");
+            osip_message_set_body(message, sdp_output_str.c_str(), sdp_output_str.size());
 
-			eXosip_call_send_answer(sip_context, evt->tid, 200, message);
+            eXosip_call_send_answer(sip_context, evt->tid, 200, message);
 
             spdlog::info("reply call invite: \n{}", sdp_output_str);
             break;
         }
         case eXosip_event_type::EXOSIP_CALL_ACK: {
             spdlog::info("got CALL_ACK: begin pushing rtp stream...");
+            if (is_pushing) {
+                spdlog::info("already pushing rtp stream");
+            } else {
+                thread t(&Device::push_rtp_stream, this);
+                t.detach();
+            }
             break;
         }
         case eXosip_event_type::EXOSIP_CALL_CLOSED: {

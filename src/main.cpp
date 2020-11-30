@@ -21,6 +21,7 @@ int main(int argc, const char* argv[]) {
             ("username", "specify the gb28181 device username", cxxopts::value<std::string>())
             ("password", "specify the gb28181 device password", cxxopts::value<std::string>())
             ("manufacture", "specify the manufacture of the gb28181 device", cxxopts::value<std::string>())
+            ("filepath", "specify the file path of the video sample", cxxopts::value<std::string>())
             ;
 
         options_result = options.parse(argc, argv);
@@ -90,7 +91,14 @@ int main(int argc, const char* argv[]) {
         manufacture = "LYY";
     } else {
         manufacture = options_result["manufacture"].as<string>();
-    }    
+    }
+
+    string filepath;
+    if (!options_result.count("filepath")) {
+        filepath = "sample.h264";
+    } else {
+        filepath = options_result["filepath"].as<string>();
+    }
 
     spdlog::info("device info: ");
     spdlog::info("server sip sid: {}", server_id);
@@ -100,11 +108,13 @@ int main(int argc, const char* argv[]) {
     spdlog::info("username: {}", username);
     spdlog::info("password: {}", password);
     spdlog::info("manufacture: {}", manufacture);
+    spdlog::info("sample file path: {}", filepath);
     spdlog::info("");
 
     auto device = shared_ptr<Device>(
         new Device(server_id, server_ip, server_port, 
-            device_id, username, password, device_port, manufacture)
+            device_id, username, password, device_port, manufacture,
+            filepath)
         );
     device->start();
 }
