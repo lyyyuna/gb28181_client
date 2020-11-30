@@ -2,6 +2,7 @@
 #include "nalu.h"
 #include "h264_parser.h"
 #include "stdlib.h"
+#include <string.h>
 
 using namespace std;
 
