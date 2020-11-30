@@ -3,6 +3,7 @@
 
 #include <string>
 #include <tuple>
+#include <memory>
 #include "eXosip2/eXosip.h"
 #include "load_h264.h"
 
