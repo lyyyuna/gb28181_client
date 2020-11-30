@@ -80,6 +80,10 @@ private:
     string from_sip;
     string to_sip;
     string ssrc;
+
+    int sockfd;
+    int bind();
+    void send_network_packet(const char * data, int length);
 };
 
 #endif
