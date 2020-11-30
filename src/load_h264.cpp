@@ -1,6 +1,7 @@
 #include <vector>
 #include "nalu.h"
 #include "h264_parser.h"
+#include "stdlib.h"
 
 using namespace std;
 
