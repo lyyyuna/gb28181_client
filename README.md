@@ -2,6 +2,9 @@
 
 国标 gb28181 模拟客户端
 
+- 支持 Linux
+- 支持 MacOS
+
 ## 编译
 
 ```
@@ -15,5 +18,5 @@ make
 
 ## 运行
 ```
-./gb28181-client --server-ip 10.200.20.26 --server-id 34020000002000000001 --server-port 5064 --device-id 31011500991320000046 
+./gb28181-client --server-ip 10.200.20.26 --server-id 34020000002000000001 --server-port 5064 --device-id 31011500991320000046 --filepath xxx.264
 ```
