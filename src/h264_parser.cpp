@@ -1,4 +1,5 @@
 #include "h264_parser.h"
+#include "spdlog/spdlog.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -132,22 +133,22 @@ int simplest_h264_parser(const char *url, void(*out_nalu)(char * buffer,int size
 
 	h264bitstream = fopen(url, "rb+");
 	if (h264bitstream == NULL) {
-		printf("Open file error\n");
-		return -1;
+		spdlog::critical("Open file error");
+		exit(1);
 	}
 
 	n = (NALU_t *)calloc(1, sizeof(NALU_t));
 	if (n == NULL) {
-		printf("Alloc NALU Error\n");
-		return -1;
+		spdlog::critical("Alloc NALU Error");
+		exit(1);
 	}
 
 	n->max_size = buffersize;
 	n->buf = (char *)calloc(buffersize, sizeof(char));
 	if (n->buf == NULL) {
 		free(n);
-		printf("AllocNALU:n->buf");
-		return -1;
+		spdlog::critical("AllocNALU:n->buf");
+		exit(1);
 	}
 
 	int data_offset = 0;
